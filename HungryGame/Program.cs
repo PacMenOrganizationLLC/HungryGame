@@ -1,4 +1,5 @@
 using HungryGame;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -19,10 +20,22 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+//Path base is needed for running behind a reverse proxy, otherwise the app will not be able to find the static files
+var pathBase = builder.Configuration["PATH_BASE"];
+if (!string.IsNullOrEmpty(pathBase))
+{
+    Console.WriteLine($"Using path base: {pathBase}");
+    app.UsePathBase(pathBase);
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    });
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler("Error");
 }
 
 app.UseCors(builder =>
@@ -56,21 +69,21 @@ app.Use(async (context, next) =>
 app.UseRouting();
 app.MapBlazorHub();
 app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{builder.Environment.ApplicationName} v1"));
+app.UseSwaggerUI(c => c.SwaggerEndpoint("v1/swagger.json", $"{builder.Environment.ApplicationName} v1"));
 
 app.MapFallbackToPage("/_Host");
 
 //API endpoints
-app.MapGet("/join", (string? userName, string? playerName, GameLogic gameLogic) =>
+app.MapGet("join", (string? userName, string? playerName, GameLogic gameLogic) =>
 {
     var name = userName ?? playerName ?? throw new ArgumentNullException(nameof(userName), "Must define either a userName or playerName in the query string.");
     return gameLogic.JoinPlayer(name);
 });
-app.MapGet("/move/left", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Left));
-app.MapGet("/move/right", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Right));
-app.MapGet("/move/up", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Up));
-app.MapGet("/move/down", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Down));
-app.MapGet("/players", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache) =>
+app.MapGet("move/left", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Left));
+app.MapGet("move/right", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Right));
+app.MapGet("move/up", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Up));
+app.MapGet("move/down", (string token, GameLogic gameLogic) => gameLogic.Move(token, Direction.Down));
+app.MapGet("players", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache) =>
 {
     return memoryCache.GetOrCreate("players", cacheEntry =>
     {
@@ -79,7 +92,7 @@ app.MapGet("/players", ([FromServices] GameLogic gameLogic, IMemoryCache memoryC
     });
 
 });
-app.MapGet("/start", (int numRows, int numCols, string password, int? timeLimit, GameLogic gameLogic) =>
+app.MapGet("start", (int numRows, int numCols, string password, int? timeLimit, GameLogic gameLogic) =>
 {
     var gameStart = new NewGameInfo
     {
@@ -91,8 +104,8 @@ app.MapGet("/start", (int numRows, int numCols, string password, int? timeLimit,
     };
     gameLogic.StartGame(gameStart);
 });
-app.MapGet("/reset", (string password, GameLogic gameLogic) => gameLogic.ResetGame(password));
-app.MapGet("/board", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache, ILogger<Program> logger) =>
+app.MapGet("reset", (string password, GameLogic gameLogic) => gameLogic.ResetGame(password));
+app.MapGet("board", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache, ILogger<Program> logger) =>
 {
     logger.LogInformation("Getting /board");
     return memoryCache.GetOrCreate("board",
@@ -103,7 +116,7 @@ app.MapGet("/board", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCac
             return gameLogic.GetBoardState();
         });
 });
-app.MapGet("/state", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache) =>
+app.MapGet("state", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache) =>
 {
     return memoryCache.GetOrCreate("state", cacheEntry =>
    {
