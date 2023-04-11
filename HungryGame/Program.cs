@@ -35,7 +35,7 @@ if (!string.IsNullOrEmpty(pathBase))
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("Error");
+    app.UseExceptionHandler("/Error");
 }
 
 app.UseCors(builder =>
