@@ -2,6 +2,9 @@ using HungryGame;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Serilog;
+using Serilog.Exceptions;
+using Serilog.Sinks.Loki;
 
 var builder = WebApplication.CreateBuilder(args);
 var requestErrorCount = 0L;
@@ -16,6 +19,15 @@ builder.Services.AddCors();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = builder.Environment.ApplicationName, Version = "v1" });
+});
+
+builder.Host.UseSerilog((context, loggerConfig) => {
+    loggerConfig.WriteTo.Console()
+    .Enrich.WithExceptionDetails()
+    .WriteTo.LokiHttp(() => new LokiSinkConfiguration
+    {
+        LokiUrl = "http://loki:3100"
+    });
 });
 
 var app = builder.Build();
