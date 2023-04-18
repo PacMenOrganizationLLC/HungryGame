@@ -2,6 +2,7 @@ using HungryGame;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Prometheus;
 using Serilog;
 using Serilog.Exceptions;
 using Serilog.Sinks.Loki;
@@ -41,6 +42,10 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
 }
+
+//Prometheus
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 app.UseCors(builder =>
 {
