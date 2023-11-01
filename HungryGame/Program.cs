@@ -135,4 +135,17 @@ app.MapGet("state", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCach
    });
 });
 
+
+
+app.MapGet("config", () =>
+{
+    return new List<GameConfigTemplate>
+    {
+        new("numRows", "15"),
+        new("numCols", "15"),
+        new("password", "password"),
+        new("timeLimit", "60")
+    };
+});
+
 app.Run();
