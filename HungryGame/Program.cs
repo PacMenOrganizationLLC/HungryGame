@@ -114,6 +114,21 @@ app.MapGet("start", (int numRows, int numCols, string password, int? timeLimit, 
     };
     gameLogic.StartGame(gameStart);
 });
+
+
+app.MapPost("start", (GameConfig config, GameLogic gameLogic) =>
+{
+    var gameStart = new NewGameInfo
+    {
+        NumColumns = config.NumCols,
+        NumRows = config.NumRows,
+        SecretCode = config.Password,
+        IsTimed = config.TimeLimit.HasValue,
+        TimeLimitInMinutes = config.TimeLimit,
+    };
+    gameLogic.StartGame(gameStart);
+});
+
 app.MapGet("reset", (string password, GameLogic gameLogic) => gameLogic.ResetGame(password));
 app.MapGet("board", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCache, ILogger<Program> logger) =>
 {
@@ -134,7 +149,6 @@ app.MapGet("state", ([FromServices] GameLogic gameLogic, IMemoryCache memoryCach
        return gameLogic.CurrentGameState.ToString();
    });
 });
-
 
 
 app.MapGet("config", () =>
